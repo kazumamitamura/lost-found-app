@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import QRCode from "react-qr-code";
 import { useToast, ToastContainer } from "@/components/ui/toast";
+import { Navigation } from "@/components/navigation";
 
 export default function RegisterPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -181,13 +182,15 @@ export default function RegisterPage() {
             }
           }
         `}} />
-        <div className="min-h-screen bg-gray-50 p-4">
-          <ToastContainer toasts={toasts} onRemove={removeToast} />
-          <div className="max-w-2xl mx-auto">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-center text-2xl">✓ 登録完了</CardTitle>
-              </CardHeader>
+        <div className="min-h-screen bg-gray-50">
+          <Navigation />
+          <div className="p-4">
+            <ToastContainer toasts={toasts} onRemove={removeToast} />
+            <div className="max-w-2xl mx-auto">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-center text-2xl">✓ 登録完了</CardTitle>
+                </CardHeader>
               <CardContent className="space-y-6">
                 <div className="text-center">
                   <p className="text-lg font-semibold mb-4 text-green-600">
@@ -271,17 +274,12 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <div className="max-w-2xl mx-auto">
-        <div className="mb-4 flex justify-end">
-          <Link href="/admin/dashboard">
-            <Button variant="outline" className="h-10">
-              忘れ物一覧
-            </Button>
-          </Link>
-        </div>
-        <Card>
+    <div className="min-h-screen bg-gray-50">
+      <Navigation />
+      <div className="p-4">
+        <ToastContainer toasts={toasts} onRemove={removeToast} />
+        <div className="max-w-2xl mx-auto">
+          <Card>
           <CardHeader>
             <CardTitle className="text-2xl text-center">忘れ物登録</CardTitle>
             <p className="text-sm text-gray-500 text-center mt-2">

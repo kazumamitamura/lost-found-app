@@ -26,6 +26,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CATEGORIES } from "@/lib/types";
 import Link from "next/link";
 import Image from "next/image";
+import { Navigation } from "@/components/navigation";
 
 export default function DashboardPage() {
   const [items, setItems] = useState<LostItem[]>([]);
@@ -499,9 +500,11 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div className="min-h-screen bg-gray-50 p-4">
-        <div className="max-w-7xl mx-auto">
-        <Card>
+      <div className="min-h-screen bg-gray-50">
+        <Navigation />
+        <div className="p-4">
+          <div className="max-w-7xl mx-auto">
+          <Card>
           <CardHeader>
             <div className="flex justify-between items-center">
               <CardTitle>管理ダッシュボード</CardTitle>
@@ -638,9 +641,10 @@ export default function DashboardPage() {
               全 {items.length} 件
             </div>
           </CardContent>
-        </Card>
+          </Card>
+        </div>
+        </div>
       </div>
-    </div>
     </>
   );
 }

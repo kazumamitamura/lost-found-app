@@ -3,10 +3,13 @@
 -- ============================================
 
 -- lf_items テーブルのポリシー修正
--- 既存の認証必須ポリシーを削除
+-- 既存のポリシーを削除（認証必須と公開の両方）
 DROP POLICY IF EXISTS "lf_items_insert_authenticated" ON lf_items;
 DROP POLICY IF EXISTS "lf_items_update_authenticated" ON lf_items;
 DROP POLICY IF EXISTS "lf_items_delete_authenticated" ON lf_items;
+DROP POLICY IF EXISTS "lf_items_insert_public" ON lf_items;
+DROP POLICY IF EXISTS "lf_items_update_public" ON lf_items;
+DROP POLICY IF EXISTS "lf_items_delete_public" ON lf_items;
 
 -- ポリシー: 誰でも挿入可能（公開登録）
 CREATE POLICY "lf_items_insert_public" ON lf_items
@@ -28,11 +31,15 @@ CREATE POLICY "lf_items_delete_public" ON lf_items
 -- lf_registrants テーブルのポリシー修正
 -- ============================================
 
--- 既存の認証必須ポリシーを削除
+-- 既存のポリシーを削除（認証必須と公開の両方）
 DROP POLICY IF EXISTS "lf_registrants_select_authenticated" ON lf_registrants;
 DROP POLICY IF EXISTS "lf_registrants_insert_authenticated" ON lf_registrants;
 DROP POLICY IF EXISTS "lf_registrants_update_authenticated" ON lf_registrants;
 DROP POLICY IF EXISTS "lf_registrants_delete_authenticated" ON lf_registrants;
+DROP POLICY IF EXISTS "lf_registrants_select_public" ON lf_registrants;
+DROP POLICY IF EXISTS "lf_registrants_insert_public" ON lf_registrants;
+DROP POLICY IF EXISTS "lf_registrants_update_public" ON lf_registrants;
+DROP POLICY IF EXISTS "lf_registrants_delete_public" ON lf_registrants;
 
 -- ポリシー: 誰でも閲覧可能
 CREATE POLICY "lf_registrants_select_public" ON lf_registrants
