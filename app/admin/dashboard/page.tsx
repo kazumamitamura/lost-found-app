@@ -36,6 +36,10 @@ export default function DashboardPage() {
   const [editForm, setEditForm] = useState<LostItemUpdateWithDates>({});
   const [showReturned, setShowReturned] = useState(false); // 返却済み表示フラグ
   const [enlargedImage, setEnlargedImage] = useState<string | null>(null); // 拡大表示中の画像URL
+  const [showNewRegistrantForm, setShowNewRegistrantForm] = useState(false); // 新規登録者フォーム表示フラグ
+  const [newRegistrantName, setNewRegistrantName] = useState(""); // 新規登録者名
+  const [newRegistrantEmail, setNewRegistrantEmail] = useState(""); // 新規登録者メール
+  const [registering, setRegistering] = useState(false); // 登録中フラグ
 
   async function fetchItems() {
     try {
@@ -84,6 +88,37 @@ export default function DashboardPage() {
     } catch (error) {
       console.error("Error returning item:", error);
       alert("返却処理中にエラーが発生しました");
+    }
+  }
+
+  async function handleNewRegistrantSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newRegistrantName.trim()) {
+      alert("氏名を入力してください");
+      return;
+    }
+
+    setRegistering(true);
+    try {
+      const { error } = await supabase
+        .from("lf_registrants")
+        .insert({
+          name: newRegistrantName.trim(),
+          email: newRegistrantEmail.trim() || null,
+          role: "教員",
+        });
+
+      if (error) throw error;
+      
+      alert("登録者を追加しました");
+      setNewRegistrantName("");
+      setNewRegistrantEmail("");
+      setShowNewRegistrantForm(false);
+    } catch (error: any) {
+      console.error("Error adding registrant:", error);
+      alert(`登録に失敗しました: ${error.message}`);
+    } finally {
+      setRegistering(false);
     }
   }
 
@@ -472,8 +507,14 @@ export default function DashboardPage() {
               <CardTitle>管理ダッシュボード</CardTitle>
               <div className="flex gap-2">
                 <Link href="/admin/register">
-                  <Button>新規登録</Button>
+                  <Button>忘れ物を登録</Button>
                 </Link>
+                <Button 
+                  variant="outline"
+                  onClick={() => setShowNewRegistrantForm(!showNewRegistrantForm)}
+                >
+                  {showNewRegistrantForm ? "キャンセル" : "新規登録者"}
+                </Button>
                 <Link href="/admin/registrants">
                   <Button variant="outline">登録者管理</Button>
                 </Link>
@@ -483,6 +524,46 @@ export default function DashboardPage() {
               </div>
             </div>
           </CardHeader>
+          {showNewRegistrantForm && (
+            <div className="px-6 py-4 bg-blue-50 border-b">
+              <form onSubmit={handleNewRegistrantSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      氏名 <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      type="text"
+                      value={newRegistrantName}
+                      onChange={(e) => setNewRegistrantName(e.target.value)}
+                      placeholder="例: 田中太郎"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      メールアドレス
+                    </label>
+                    <Input
+                      type="email"
+                      value={newRegistrantEmail}
+                      onChange={(e) => setNewRegistrantEmail(e.target.value)}
+                      placeholder="例: tanaka@example.com"
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <Button 
+                      type="submit" 
+                      className="w-full bg-blue-500 hover:bg-blue-600"
+                      disabled={registering}
+                    >
+                      {registering ? "登録中..." : "登録"}
+                    </Button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          )}
           <CardContent>
             <div className="mb-4 space-y-2">
               <div className="flex gap-4 items-center">

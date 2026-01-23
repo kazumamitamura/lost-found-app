@@ -71,7 +71,11 @@ export function ItemsList({ initialItems }: ItemsListProps) {
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {filteredItems.map((item) => (
-            <Link key={item.id} href={`/item/${item.id}`}>
+            <Link 
+              key={item.id} 
+              href={`/item/${item.id}`}
+              className="block h-full"
+            >
               <Card className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer h-full">
                 <div className="aspect-square relative bg-gray-100">
                   {getImageUrl(item.image_url) ? (
