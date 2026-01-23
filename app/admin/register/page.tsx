@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { CATEGORIES } from "@/lib/types";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -42,8 +43,8 @@ export default function RegisterPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!location || !category || !imageFile) {
-      showToast("場所、カテゴリ、写真は必須です", "error");
+    if (!location || !category || !imageFile || !registrantName || !foundDate) {
+      showToast("場所、カテゴリ、写真、登録者名、拾得日は必須です", "error");
       return;
     }
 
@@ -97,65 +98,175 @@ export default function RegisterPage() {
     window.print();
   }
 
+  async function handleDownloadPDF() {
+    if (!registeredItem) return;
+    
+    try {
+      // 動的にjsPDFとhtml2canvasをインポート
+      const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
+        import('jspdf'),
+        import('html2canvas'),
+      ]);
+
+      const qrElement = document.getElementById('qr-label');
+      if (!qrElement) {
+        showToast("QRコード要素が見つかりません", "error");
+        return;
+      }
+
+      showToast("PDFを生成中...", "info");
+      
+      const canvas = await html2canvas(qrElement, {
+        scale: 3,
+        backgroundColor: '#ffffff',
+        logging: false,
+        useCORS: true,
+        width: qrElement.scrollWidth,
+        height: qrElement.scrollHeight,
+      });
+
+      const imgData = canvas.toDataURL('image/png', 1.0);
+      
+      // PDFサイズをQRコードのアスペクト比に合わせて調整
+      const aspectRatio = canvas.height / canvas.width;
+      const pdfWidth = 100; // mm
+      const pdfHeight = Math.max(pdfWidth * aspectRatio, 80); // 最小80mm
+      
+      const pdf = new jsPDF({
+        orientation: pdfHeight > pdfWidth ? 'portrait' : 'landscape',
+        unit: 'mm',
+        format: [pdfWidth, pdfHeight],
+      });
+
+      // QRコードが完全に収まるようにサイズを調整
+      const imgWidth = pdfWidth;
+      const imgHeight = pdfWidth * aspectRatio;
+      
+      // 中央に配置（縦方向の余白を考慮）
+      const yOffset = (pdfHeight - imgHeight) / 2;
+      pdf.addImage(imgData, 'PNG', 0, Math.max(0, yOffset), imgWidth, imgHeight);
+      pdf.save(`忘れ物ラベル_${registeredItem.id.substring(0, 8)}.pdf`);
+      
+      showToast("PDFをダウンロードしました", "success");
+    } catch (error: any) {
+      console.error("PDF生成エラー:", error);
+      showToast("PDFの生成に失敗しました。印刷機能をお使いください。", "error");
+    }
+  }
+
   if (registeredItem) {
-    const qrUrl = `${window.location.origin}/return/${registeredItem.qr_code_uuid}`;
+    const qrUrl = typeof window !== 'undefined' 
+      ? `${window.location.origin}/return/${registeredItem.qr_code_uuid}`
+      : `/return/${registeredItem.qr_code_uuid}`;
     return (
-      <div className="min-h-screen bg-gray-50 p-4">
-        <ToastContainer toasts={toasts} onRemove={removeToast} />
-        <div className="max-w-2xl mx-auto">
-          <Card className="print:shadow-none">
-            <CardHeader>
-              <CardTitle className="text-center">登録完了</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="text-center">
-                <p className="text-lg font-semibold mb-4">
-                  忘れ物を登録しました
-                </p>
-                <div className="flex justify-center mb-6">
-                  <div className="bg-white p-4 rounded-lg border-2 border-gray-300">
-                    <QRCode value={qrUrl} size={200} />
+      <>
+        <style dangerouslySetInnerHTML={{ __html: `
+          @media print {
+            body * {
+              visibility: hidden;
+            }
+            #qr-label, #qr-label * {
+              visibility: visible;
+            }
+            #qr-label {
+              position: absolute;
+              left: 0;
+              top: 0;
+              width: 100mm;
+              height: 60mm;
+            }
+            @page {
+              size: 100mm 60mm;
+              margin: 0;
+            }
+          }
+        `}} />
+        <div className="min-h-screen bg-gray-50 p-4">
+          <ToastContainer toasts={toasts} onRemove={removeToast} />
+          <div className="max-w-2xl mx-auto">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-center text-2xl">✓ 登録完了</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="text-center">
+                  <p className="text-lg font-semibold mb-4 text-green-600">
+                    忘れ物を登録しました
+                  </p>
+                  
+                  {/* 印刷用ラベル */}
+                  <div
+                    id="qr-label"
+                    className="bg-white border-2 border-gray-300 rounded-lg p-6 mx-auto print:border-0 print:shadow-none"
+                    style={{ width: '100mm', minHeight: '80mm', padding: '15mm' }}
+                  >
+                    <div className="text-center" style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div>
+                        <p className="text-xs font-semibold text-gray-700 mb-2" style={{ fontSize: '10pt' }}>忘れ物管理システム</p>
+                        <div className="flex justify-center mb-3">
+                          <div className="bg-white p-3 rounded border border-gray-200" style={{ display: 'inline-block', maxWidth: '100%' }}>
+                            <QRCode value={qrUrl} size={180} />
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-600 mt-3" style={{ fontSize: '9pt', fontWeight: 'bold' }}>
+                          ID: {registeredItem.id.substring(0, 8)}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1" style={{ fontSize: '8pt' }}>
+                          このQRコードをスキャンして返却手続きを行います
+                        </p>
+                      </div>
+                    </div>
                   </div>
+
+                  <p className="text-sm text-gray-600 mb-2 mt-4 print:hidden">
+                    QRコードを印刷して、忘れ物に貼り付けてください
+                  </p>
                 </div>
-                <p className="text-sm text-gray-600 mb-2">
-                  QRコードを印刷して、忘れ物に貼り付けてください
-                </p>
-                <p className="text-xs text-gray-500">
-                  ID: {registeredItem.id}
-                </p>
-              </div>
-              <div className="flex gap-4">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setRegisteredItem(null);
-                    setImageFile(null);
-                    setImagePreview(null);
-                    setLocation("");
-                    setCategory("");
-                    setDescription("");
-                    setRegistrantName("");
-                    setFoundDate("");
-                  }}
-                  className="flex-1"
-                >
-                  新しいアイテムを登録
-                </Button>
-                <Button onClick={handlePrint} className="flex-1">
-                  印刷
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => router.push("/admin/dashboard")}
-                  className="flex-1"
-                >
-                  管理画面へ
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+                
+                <div className="flex flex-col sm:flex-row gap-3 print:hidden">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setRegisteredItem(null);
+                      setImageFile(null);
+                      setImagePreview(null);
+                      setLocation("");
+                      setCategory("");
+                      setDescription("");
+                      setRegistrantName("");
+                      setFoundDate("");
+                    }}
+                    className="flex-1 h-12"
+                  >
+                    ➕ 新しいアイテムを登録
+                  </Button>
+                  <Button 
+                    onClick={handlePrint} 
+                    className="flex-1 h-12 bg-green-500 hover:bg-green-600 text-white"
+                  >
+                    🖨️ 印刷
+                  </Button>
+                  <Button
+                    onClick={handleDownloadPDF}
+                    className="flex-1 h-12 bg-blue-500 hover:bg-blue-600 text-white"
+                  >
+                    📄 PDF保存
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => router.push("/admin/dashboard")}
+                    className="flex-1 h-12"
+                  >
+                    📊 管理画面へ
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
@@ -163,19 +274,30 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-gray-50 p-4">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="max-w-2xl mx-auto">
+        <div className="mb-4 flex justify-end">
+          <Link href="/admin/dashboard">
+            <Button variant="outline" className="h-10">
+              忘れ物一覧
+            </Button>
+          </Link>
+        </div>
         <Card>
           <CardHeader>
-            <CardTitle>忘れ物登録</CardTitle>
+            <CardTitle className="text-2xl text-center">忘れ物登録</CardTitle>
+            <p className="text-sm text-gray-500 text-center mt-2">
+              スマホで撮影して10秒で登録
+            </p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* 大きな写真撮影/アップロードボタン */}
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-sm font-medium mb-3">
                   写真 <span className="text-red-500">*</span>
                 </label>
-                <div className="border-2 border-dashed border-primary rounded-lg p-6 text-center bg-blue-50 hover:bg-blue-100 transition-colors">
+                <div className="border-2 border-dashed border-blue-400 rounded-xl p-8 text-center bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer relative">
                   {imagePreview ? (
-                    <div className="relative aspect-video mb-4 rounded-lg overflow-hidden">
+                    <div className="relative aspect-video mb-4 rounded-lg overflow-hidden bg-white">
                       <Image
                         src={imagePreview}
                         alt="Preview"
@@ -184,21 +306,22 @@ export default function RegisterPage() {
                       />
                       <button
                         type="button"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setImageFile(null);
                           setImagePreview(null);
                         }}
-                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 shadow-lg"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                       </button>
                     </div>
                   ) : (
-                    <div className="py-8">
+                    <div className="py-12">
                       <svg
-                        className="mx-auto h-16 w-16 text-primary"
+                        className="mx-auto h-20 w-20 text-blue-500"
                         stroke="currentColor"
                         fill="none"
                         viewBox="0 0 48 48"
@@ -210,17 +333,17 @@ export default function RegisterPage() {
                           strokeLinejoin="round"
                         />
                       </svg>
-                      <p className="mt-4 text-base font-semibold text-gray-700">
-                        写真をアップロード
+                      <p className="mt-6 text-lg font-semibold text-gray-700">
+                        写真を撮影・アップロード
                       </p>
                       <p className="mt-2 text-sm text-gray-500">
-                        クリックしてファイルを選択、またはスマホで撮影
+                        タップしてカメラを起動、またはファイルを選択
                       </p>
                     </div>
                   )}
-                  <label className="mt-4 inline-block">
-                    <span className="px-4 py-2 bg-primary text-white rounded-lg cursor-pointer hover:bg-primary/90 transition-colors">
-                      {imagePreview ? "写真を変更" : "写真を選択"}
+                  <label className="mt-6 inline-block">
+                    <span className="px-8 py-4 bg-blue-500 text-white rounded-lg cursor-pointer hover:bg-blue-600 transition-colors text-base font-semibold shadow-md">
+                      {imagePreview ? "写真を変更" : "📷 写真を撮影・選択"}
                     </span>
                     <Input
                       type="file"
@@ -233,82 +356,92 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  登録者名（拾得者） <span className="text-gray-500 text-xs">（任意）</span>
-                </label>
-                <Input
-                  type="text"
-                  value={registrantName}
-                  onChange={(e) => setRegistrantName(e.target.value)}
-                  placeholder="例: 田中太郎"
-                />
+              {/* 必須項目: 場所とカテゴリ */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    拾得場所 <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type="text"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="例: 体育館、図書館、1階廊下..."
+                    required
+                    className="h-11"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    カテゴリ <span className="text-red-500">*</span>
+                  </label>
+                  <Select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    required
+                    className="h-11"
+                  >
+                    <option value="">選択してください</option>
+                    {CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  拾得日 <span className="text-gray-500 text-xs">（任意）</span>
-                </label>
-                <Input
-                  type="date"
-                  value={foundDate}
-                  onChange={(e) => setFoundDate(e.target.value)}
-                  max={new Date().toISOString().split('T')[0]}
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  未入力の場合は登録日時が使用されます
-                </p>
+              {/* 詳細情報（必須） */}
+              <div className="border rounded-lg p-4 bg-white space-y-4">
+                <h3 className="text-sm font-medium text-gray-900 mb-4">
+                  📝 詳細情報
+                </h3>
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    登録者名（拾得者） <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type="text"
+                    value={registrantName}
+                    onChange={(e) => setRegistrantName(e.target.value)}
+                    placeholder="例: 田中太郎"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    拾得日 <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type="date"
+                    value={foundDate}
+                    onChange={(e) => setFoundDate(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    備考・特徴 <span className="text-gray-500 text-xs">（任意）</span>
+                  </label>
+                  <Input
+                    type="text"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="例: 黒い財布、赤いライン..."
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  拾得場所 <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  type="text"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  placeholder="例: 体育館、図書館、1階廊下..."
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  カテゴリ <span className="text-red-500">*</span>
-                </label>
-                <Select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  required
-                >
-                  <option value="">選択してください</option>
-                  {CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  備考・特徴（任意）
-                </label>
-                <Input
-                  type="text"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="例: 黒い財布、赤いライン..."
-                />
-              </div>
-
+              {/* 登録ボタン */}
               <Button
                 type="submit"
-                className="w-full h-12 text-lg"
+                className="w-full h-14 text-lg font-semibold bg-blue-500 hover:bg-blue-600 text-white shadow-lg"
                 disabled={uploading}
               >
-                {uploading ? "登録中..." : "登録する"}
+                {uploading ? "登録中..." : "✓ 登録する"}
               </Button>
             </form>
           </CardContent>

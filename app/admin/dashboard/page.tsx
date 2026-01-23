@@ -34,17 +34,23 @@ export default function DashboardPage() {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<LostItemUpdateWithDates>({});
-
-  useEffect(() => {
-    fetchItems();
-  }, []);
+  const [showReturned, setShowReturned] = useState(false); // 返却済み表示フラグ
+  const [enlargedImage, setEnlargedImage] = useState<string | null>(null); // 拡大表示中の画像URL
 
   async function fetchItems() {
     try {
-      const { data, error } = await supabase
-        .from("lf_items")
-        .select("*")
-        .order("created_at", { ascending: false });
+      let query = supabase.from("lf_items").select("*");
+      
+      // 返却済み表示フラグに応じてフィルタリング
+      if (showReturned) {
+        // 返却済みのみ表示
+        query = query.eq("is_returned", true);
+      } else {
+        // 未返却のみ表示
+        query = query.eq("is_returned", false);
+      }
+      
+      const { data, error } = await query.order("created_at", { ascending: false });
 
       if (error) throw error;
       setItems(data || []);
@@ -52,6 +58,32 @@ export default function DashboardPage() {
       console.error("Error fetching items:", error);
     } finally {
       setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchItems();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showReturned]);
+
+  async function handleReturn(id: string) {
+    if (!confirm("この忘れ物を返却済みにしますか？")) return;
+
+    try {
+      const { error } = await supabase
+        .from("lf_items")
+        .update({
+          is_returned: true,
+          returned_at: new Date().toISOString(),
+        })
+        .eq("id", id);
+
+      if (error) throw error;
+      fetchItems();
+      alert("返却済みに更新しました");
+    } catch (error) {
+      console.error("Error returning item:", error);
+      alert("返却処理中にエラーが発生しました");
     }
   }
 
@@ -126,11 +158,15 @@ export default function DashboardPage() {
         header: "写真",
         cell: ({ row }) => {
           const item = row.original;
+          const imageUrl = getImageUrl(item.image_url);
           return (
-            <div className="w-16 h-16 relative">
-              {getImageUrl(item.image_url) ? (
+            <div 
+              className="w-16 h-16 relative cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => imageUrl && setEnlargedImage(imageUrl)}
+            >
+              {imageUrl ? (
                 <Image
-                  src={getImageUrl(item.image_url)!}
+                  src={imageUrl}
                   alt={item.category}
                   fill
                   className="object-cover rounded"
@@ -284,6 +320,21 @@ export default function DashboardPage() {
         cell: ({ row }) => formatDate(row.original.returned_at),
       },
       {
+        id: "return_status",
+        header: "返却済み",
+        cell: ({ row }) => {
+          const item = row.original;
+          if (item.is_returned) {
+            return (
+              <span className="font-bold text-red-600 text-lg">
+                返却済み
+              </span>
+            );
+          }
+          return <span className="text-gray-500">-</span>;
+        },
+      },
+      {
         id: "actions",
         header: "操作",
         cell: ({ row }) => {
@@ -314,6 +365,16 @@ export default function DashboardPage() {
                 </>
               ) : (
                 <>
+                  {!item.is_returned && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="bg-green-500 hover:bg-green-600 text-white"
+                      onClick={() => handleReturn(item.id)}
+                    >
+                      返却
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     variant="outline"
@@ -364,8 +425,47 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-7xl mx-auto">
+    <>
+      {/* 画像拡大表示モーダル */}
+      {enlargedImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
+          onClick={() => setEnlargedImage(null)}
+        >
+          <div className="relative max-w-4xl max-h-[90vh] w-full h-full flex items-center justify-center">
+            <button
+              onClick={() => setEnlargedImage(null)}
+              className="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-75 transition-colors z-10"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+            <div className="relative w-full h-full" onClick={(e) => e.stopPropagation()}>
+              <Image
+                src={enlargedImage}
+                alt="拡大画像"
+                fill
+                className="object-contain"
+                sizes="100vw"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="max-w-7xl mx-auto">
         <Card>
           <CardHeader>
             <div className="flex justify-between items-center">
@@ -373,6 +473,9 @@ export default function DashboardPage() {
               <div className="flex gap-2">
                 <Link href="/admin/register">
                   <Button>新規登録</Button>
+                </Link>
+                <Link href="/admin/registrants">
+                  <Button variant="outline">登録者管理</Button>
                 </Link>
                 <Button variant="outline" onClick={handleExportCSV}>
                   CSV出力
@@ -382,17 +485,33 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="mb-4 space-y-2">
-              <Input
-                placeholder="検索..."
-                value={
-                  (table.getColumn("category")?.getFilterValue() as string) ??
-                  ""
-                }
-                onChange={(e) =>
-                  table.getColumn("category")?.setFilterValue(e.target.value)
-                }
-                className="max-w-sm"
-              />
+              <div className="flex gap-4 items-center">
+                <Input
+                  placeholder="検索..."
+                  value={
+                    (table.getColumn("category")?.getFilterValue() as string) ??
+                    ""
+                  }
+                  onChange={(e) =>
+                    table.getColumn("category")?.setFilterValue(e.target.value)
+                  }
+                  className="max-w-sm"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    variant={!showReturned ? "default" : "outline"}
+                    onClick={() => setShowReturned(false)}
+                  >
+                    未返却
+                  </Button>
+                  <Button
+                    variant={showReturned ? "default" : "outline"}
+                    onClick={() => setShowReturned(true)}
+                  >
+                    返却済み
+                  </Button>
+                </div>
+              </div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
@@ -441,5 +560,6 @@ export default function DashboardPage() {
         </Card>
       </div>
     </div>
+    </>
   );
 }

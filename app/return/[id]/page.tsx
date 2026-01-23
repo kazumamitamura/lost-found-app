@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { LostItem } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
 import { formatDate, getImageUrl } from "@/lib/utils";
@@ -16,14 +16,16 @@ export default function ReturnPage({ params }: { params: Promise<{ id: string }>
   const [returning, setReturning] = useState(false);
   const [returned, setReturned] = useState(false);
   const router = useRouter();
-  const [id, setId] = useState<string>("");
+  
+  // Next.js 15のparamsを同期的に解決
+  const resolvedParams = use(params);
+  const qrCodeUuid = resolvedParams.id;
 
   useEffect(() => {
-    params.then((p) => {
-      setId(p.id);
-      fetchItem(p.id);
-    });
-  }, [params]);
+    if (qrCodeUuid) {
+      fetchItem(qrCodeUuid);
+    }
+  }, [qrCodeUuid]);
 
   async function fetchItem(itemId: string) {
     try {
@@ -155,15 +157,20 @@ export default function ReturnPage({ params }: { params: Promise<{ id: string }>
                 </p>
               </div>
             ) : (
-              <Button
-                variant="success"
-                size="lg"
-                className="w-full h-14 text-lg"
-                onClick={handleReturn}
-                disabled={returning}
-              >
-                {returning ? "処理中..." : "持ち主に返却する"}
-              </Button>
+              <div className="space-y-4">
+                <div className="text-center">
+                  <p className="text-gray-600 mb-4">
+                    返却する場合はボタンを選択してください
+                  </p>
+                </div>
+                <Button
+                  className="w-full h-16 text-xl font-semibold bg-green-500 hover:bg-green-600 text-white"
+                  onClick={handleReturn}
+                  disabled={returning}
+                >
+                  {returning ? "処理中..." : "返却する"}
+                </Button>
+              </div>
             )}
           </CardContent>
         </Card>
