@@ -114,9 +114,18 @@ npm run dev
 
 ## 注意事項
 
-- このアプリは既存のSupabaseプロジェクト「Portfolio-Master」を使用します
-- テーブル名には接頭辞 `lf_` が付いています
+- このアプリは既存のSupabaseプロジェクト「Master-Portfolio-DB」を使用します
+- テーブル名には接頭辞 `lf_` が付いています（複数アプリ管理のため）
 - 認証はSupabaseの認証システムを使用します（管理者機能には認証が必要）
+
+## 複数アプリの管理
+
+このプロジェクトは、1つのSupabaseプロジェクト（Master-Portfolio-DB）で複数のアプリを管理する設計になっています。
+
+- **接頭辞システム**: 各アプリは一意の接頭辞を使用（例: `lf_`）
+- **詳細**: `MULTI_APP_GUIDE.md` を参照
+- **接頭辞レジストリ**: `app-prefix-registry.md` を参照
+- **新規アプリテンプレート**: `templates/new-app-template.sql` を参照
 
 ## データベースマイグレーション
 

@@ -227,7 +227,7 @@ export default function DashboardPage() {
           if (editingId === item.id) {
             return (
               <Input
-                value={editForm.registrant_name !== undefined ? editForm.registrant_name : (item.registrant_name || "")}
+                value={(editForm.registrant_name ?? item.registrant_name) ?? ""}
                 onChange={(e) =>
                   setEditForm({ ...editForm, registrant_name: e.target.value || null })
                 }
