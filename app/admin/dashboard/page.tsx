@@ -198,7 +198,7 @@ export default function DashboardPage() {
             return (
               <Input
                 type="date"
-                value={editForm.found_date || item.found_date || ""}
+                value={(editForm.found_date ?? item.found_date) ?? ""}
                 onChange={(e) =>
                   setEditForm({ ...editForm, found_date: e.target.value || null })
                 }
