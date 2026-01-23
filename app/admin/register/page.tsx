@@ -191,8 +191,8 @@ export default function RegisterPage() {
                 <CardHeader>
                   <CardTitle className="text-center text-2xl">✓ 登録完了</CardTitle>
                 </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="text-center">
+                <CardContent className="space-y-6">
+                  <div className="text-center">
                   <p className="text-lg font-semibold mb-4 text-green-600">
                     忘れ物を登録しました
                   </p>
@@ -226,9 +226,9 @@ export default function RegisterPage() {
                   <p className="text-sm text-gray-600 mb-2 mt-4 print:hidden">
                     QRコードを印刷して、忘れ物に貼り付けてください
                   </p>
-                </div>
-                
-                <div className="flex flex-col sm:flex-row gap-3 print:hidden">
+                  </div>
+                  
+                  <div className="flex flex-col sm:flex-row gap-3 print:hidden">
                   <Button
                     variant="outline"
                     onClick={() => {
@@ -264,9 +264,10 @@ export default function RegisterPage() {
                   >
                     📊 管理画面へ
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </>
