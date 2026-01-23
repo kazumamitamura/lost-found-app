@@ -8,6 +8,7 @@ import { Select } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast, ToastContainer } from "@/components/ui/toast";
 import Link from "next/link";
+import { Navigation } from "@/components/navigation";
 
 type Registrant = {
   id: string;
@@ -96,7 +97,13 @@ export default function RegistrantsPage() {
       fetchRegistrants();
     } catch (error: any) {
       console.error("Error saving registrant:", error);
-      showToast(error.message || "保存に失敗しました", "error");
+      let errorMessage = error.message || "保存に失敗しました";
+      if (error.message?.includes('row-level security')) {
+        errorMessage = "登録者の保存に失敗しました: RLSポリシーが正しく設定されていません。Supabaseでfix_rls_policies.sqlを実行してください。";
+      } else if (error.message?.includes('Failed to fetch')) {
+        errorMessage = "登録者の保存に失敗しました: ネットワークエラー。Supabaseの接続を確認してください。";
+      }
+      showToast(errorMessage, "error");
     }
   }
 
@@ -212,16 +219,25 @@ export default function RegistrantsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-4 flex justify-between items-center">
-          <Link href="/admin/dashboard">
-            <Button variant="outline" className="h-10">
-              ← 忘れ物一覧に戻る
-            </Button>
-          </Link>
-        </div>
+    <div className="min-h-screen bg-gray-50">
+      <Navigation />
+      <div className="p-4">
+        <ToastContainer toasts={toasts} onRemove={removeToast} />
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-4 flex justify-between items-center">
+            <div className="flex gap-2">
+              <Link href="/admin/dashboard">
+                <Button variant="outline" className="h-10">
+                  ← 忘れ物一覧に戻る
+                </Button>
+              </Link>
+              <Link href="/">
+                <Button variant="outline" className="h-10">
+                  🔍 検索ページへ
+                </Button>
+              </Link>
+            </div>
+          </div>
 
         <Card className="mb-6">
           <CardHeader>

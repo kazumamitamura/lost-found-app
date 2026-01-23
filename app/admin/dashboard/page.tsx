@@ -508,7 +508,7 @@ export default function DashboardPage() {
           <CardHeader>
             <div className="flex justify-between items-center">
               <CardTitle>管理ダッシュボード</CardTitle>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Link href="/admin/register">
                   <Button>忘れ物を登録</Button>
                 </Link>
@@ -520,6 +520,9 @@ export default function DashboardPage() {
                 </Button>
                 <Link href="/admin/registrants">
                   <Button variant="outline">登録者管理</Button>
+                </Link>
+                <Link href="/">
+                  <Button variant="outline">🔍 検索ページ</Button>
                 </Link>
                 <Button variant="outline" onClick={handleExportCSV}>
                   CSV出力

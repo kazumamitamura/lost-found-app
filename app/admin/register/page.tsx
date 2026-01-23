@@ -56,13 +56,23 @@ export default function RegisterPage() {
       const fileExt = imageFile.name.split(".").pop();
       const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError, data: uploadData } = await supabase.storage
         .from("lf-images")
-        .upload(fileName, imageFile);
+        .upload(fileName, imageFile, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
       if (uploadError) {
         console.error("Upload error:", uploadError);
-        throw new Error(`画像のアップロードに失敗しました: ${uploadError.message}`);
+        // より詳細なエラーメッセージを提供
+        let errorMessage = `画像のアップロードに失敗しました: ${uploadError.message}`;
+        if (uploadError.message.includes('new row violates row-level security')) {
+          errorMessage = "画像のアップロードに失敗しました: Storageポリシーが正しく設定されていません。Supabaseでfix_storage_policy.sqlを実行してください。";
+        } else if (uploadError.message.includes('Failed to fetch')) {
+          errorMessage = "画像のアップロードに失敗しました: ネットワークエラー。Supabaseの接続を確認してください。";
+        }
+        throw new Error(errorMessage);
       }
 
       // 2. データベースに登録
