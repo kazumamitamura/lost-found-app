@@ -1,5 +1,5 @@
 import { LostItem } from "@/lib/types";
-import { supabase } from "@/lib/supabase";
+import { createServerClient } from "@/lib/supabase";
 import { formatDate, getImageUrl } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
@@ -7,18 +7,24 @@ import Link from "next/link";
 import { ItemsList } from "@/components/items-list";
 
 async function getStoredItems(): Promise<LostItem[]> {
-  const { data, error } = await supabase
-    .from("lf_items")
-    .select("*")
-    .eq("is_returned", false)
-    .order("created_at", { ascending: false });
+  try {
+    const supabase = createServerClient();
+    const { data, error } = await supabase
+      .from("lf_items")
+      .select("*")
+      .eq("is_returned", false)
+      .order("created_at", { ascending: false });
 
-  if (error) {
-    console.error("Error fetching items:", error);
+    if (error) {
+      console.error("Error fetching items:", error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error("Error creating Supabase client:", error);
     return [];
   }
-
-  return data || [];
 }
 
 export default async function HomePage() {

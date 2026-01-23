@@ -1,5 +1,5 @@
 import { LostItem } from "@/lib/types";
-import { supabase } from "@/lib/supabase";
+import { createServerClient } from "@/lib/supabase";
 import { formatDate, getImageUrl } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
@@ -8,17 +8,23 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 async function getItem(id: string): Promise<LostItem | null> {
-  const { data, error } = await supabase
-    .from("lf_items")
-    .select("*")
-    .eq("id", id)
-    .single();
+  try {
+    const supabase = createServerClient();
+    const { data, error } = await supabase
+      .from("lf_items")
+      .select("*")
+      .eq("id", id)
+      .single();
 
-  if (error || !data) {
+    if (error || !data) {
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error creating Supabase client:", error);
     return null;
   }
-
-  return data;
 }
 
 export default async function ItemDetailPage({
