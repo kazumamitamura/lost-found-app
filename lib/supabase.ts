@@ -22,7 +22,17 @@ export function createServerClient() {
 }
 
 // クライアントコンポーネント用のSupabaseクライアント
-// 環境変数が設定されていない場合は空文字列で初期化（実行時エラーを防ぐ）
+// 環境変数の検証
+if (typeof window !== 'undefined') {
+  // クライアント側でのみ環境変数をチェック
+  if (!supabaseUrl || !supabaseAnonKey || supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder-key') {
+    console.error(
+      '⚠️ Missing Supabase environment variables!\n' +
+      'Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your environment variables.'
+    );
+  }
+}
+
 export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'placeholder-key',

@@ -66,11 +66,13 @@ export default function RegisterPage() {
       if (uploadError) {
         console.error("Upload error:", uploadError);
         // より詳細なエラーメッセージを提供
-        let errorMessage = `画像のアップロードに失敗しました: ${uploadError.message}`;
-        if (uploadError.message.includes('new row violates row-level security')) {
+        let errorMessage = `画像のアップロードに失敗しました: ${uploadError.message || 'Unknown error'}`;
+        if (uploadError.message?.includes('new row violates row-level security') || uploadError.message?.includes('RLS')) {
           errorMessage = "画像のアップロードに失敗しました: Storageポリシーが正しく設定されていません。Supabaseでfix_storage_policy.sqlを実行してください。";
-        } else if (uploadError.message.includes('Failed to fetch')) {
-          errorMessage = "画像のアップロードに失敗しました: ネットワークエラー。Supabaseの接続を確認してください。";
+        } else if (uploadError.message?.includes('Failed to fetch') || uploadError.message?.includes('NetworkError')) {
+          errorMessage = "画像のアップロードに失敗しました: ネットワークエラー。Supabaseの接続を確認してください。環境変数が正しく設定されているか確認してください。";
+        } else if (uploadError.message?.includes('JWT') || uploadError.message?.includes('auth')) {
+          errorMessage = "画像のアップロードに失敗しました: 認証エラー。Supabaseの環境変数を確認してください。";
         }
         throw new Error(errorMessage);
       }

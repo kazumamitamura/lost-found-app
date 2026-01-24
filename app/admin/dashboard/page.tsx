@@ -117,7 +117,18 @@ export default function DashboardPage() {
       setShowNewRegistrantForm(false);
     } catch (error: any) {
       console.error("Error adding registrant:", error);
-      alert(`登録に失敗しました: ${error.message}`);
+      let errorMessage = `登録に失敗しました: ${error.message || 'Unknown error'}`;
+      
+      // より詳細なエラーメッセージを提供
+      if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+        errorMessage = "登録に失敗しました: ネットワークエラー。Supabaseの接続を確認してください。環境変数が正しく設定されているか確認してください。";
+      } else if (error.message?.includes('row-level security') || error.message?.includes('RLS')) {
+        errorMessage = "登録に失敗しました: RLSポリシーが正しく設定されていません。Supabaseでfix_rls_policies.sqlを実行してください。";
+      } else if (error.message?.includes('JWT') || error.message?.includes('auth')) {
+        errorMessage = "登録に失敗しました: 認証エラー。Supabaseの環境変数を確認してください。";
+      }
+      
+      alert(errorMessage);
     } finally {
       setRegistering(false);
     }
