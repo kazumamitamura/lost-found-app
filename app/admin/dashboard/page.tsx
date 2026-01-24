@@ -18,61 +18,103 @@ type LostItemUpdateWithDates = LostItemUpdate & {
   registrant_name?: string | null;
 };
 import { supabase } from "@/lib/supabase";
-import { formatDate, getImageUrl } from "@/lib/utils";
+import { CATEGORIES } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CATEGORIES } from "@/lib/types";
-import Link from "next/link";
+import { formatDate, getImageUrl } from "@/lib/utils";
 import Image from "next/image";
+import Link from "next/link";
 import { Navigation } from "@/components/navigation";
+import { ProtectedRoute } from "@/components/protected-route";
 
-export default function DashboardPage() {
+function DashboardPageContent() {
   const [items, setItems] = useState<LostItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<LostItemUpdateWithDates>({});
-  const [showReturned, setShowReturned] = useState(false); // 返却済み表示フラグ
-  const [enlargedImage, setEnlargedImage] = useState<string | null>(null); // 拡大表示中の画像URL
-  const [showNewRegistrantForm, setShowNewRegistrantForm] = useState(false); // 新規登録者フォーム表示フラグ
-  const [newRegistrantName, setNewRegistrantName] = useState(""); // 新規登録者名
-  const [newRegistrantEmail, setNewRegistrantEmail] = useState(""); // 新規登録者メール
-  const [registering, setRegistering] = useState(false); // 登録中フラグ
+  const [showReturned, setShowReturned] = useState(false);
+  const [enlargedImage, setEnlargedImage] = useState<string | null>(null);
+  const [showNewRegistrantForm, setShowNewRegistrantForm] = useState(false);
+  const [newRegistrantName, setNewRegistrantName] = useState("");
+  const [newRegistrantEmail, setNewRegistrantEmail] = useState("");
+  const [registering, setRegistering] = useState(false);
+
+  useEffect(() => {
+    fetchItems();
+  }, [showReturned]);
 
   async function fetchItems() {
+    setLoading(true);
     try {
-      let query = supabase.from("lf_items").select("*");
-      
-      // 返却済み表示フラグに応じてフィルタリング
-      if (showReturned) {
-        // 返却済みのみ表示
-        query = query.eq("is_returned", true);
-      } else {
-        // 未返却のみ表示
-        query = query.eq("is_returned", false);
-      }
-      
-      const { data, error } = await query.order("created_at", { ascending: false });
+      const { data, error } = await supabase
+        .from("lf_items")
+        .select("*")
+        .eq("is_returned", showReturned)
+        .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching items:", error);
+        alert(`データの取得に失敗しました: ${error.message}`);
+        return;
+      }
+
       setItems(data || []);
-    } catch (error) {
-      console.error("Error fetching items:", error);
+    } catch (error: any) {
+      console.error("Error:", error);
+      alert(`エラーが発生しました: ${error.message}`);
     } finally {
       setLoading(false);
     }
   }
 
-  useEffect(() => {
-    fetchItems();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showReturned]);
+  async function handleDelete(id: string) {
+    if (!confirm("本当に削除しますか？")) return;
+
+    try {
+      const { error } = await supabase.from("lf_items").delete().eq("id", id);
+
+      if (error) {
+        console.error("Error deleting item:", error);
+        alert(`削除に失敗しました: ${error.message}`);
+        return;
+      }
+
+      await fetchItems();
+      alert("削除しました");
+    } catch (error: any) {
+      console.error("Error:", error);
+      alert(`エラーが発生しました: ${error.message}`);
+    }
+  }
+
+  async function handleSave(id: string) {
+    try {
+      const { error } = await supabase
+        .from("lf_items")
+        .update(editForm)
+        .eq("id", id);
+
+      if (error) {
+        console.error("Error updating item:", error);
+        alert(`更新に失敗しました: ${error.message}`);
+        return;
+      }
+
+      setEditingId(null);
+      setEditForm({});
+      await fetchItems();
+      alert("更新しました");
+    } catch (error: any) {
+      console.error("Error:", error);
+      alert(`エラーが発生しました: ${error.message}`);
+    }
+  }
 
   async function handleReturn(id: string) {
-    if (!confirm("この忘れ物を返却済みにしますか？")) return;
+    if (!confirm("返却済みにしますか？")) return;
 
     try {
       const { error } = await supabase
@@ -83,147 +125,107 @@ export default function DashboardPage() {
         })
         .eq("id", id);
 
-      if (error) throw error;
-      fetchItems();
-      alert("返却済みに更新しました");
-    } catch (error) {
-      console.error("Error returning item:", error);
-      alert("返却処理中にエラーが発生しました");
+      if (error) {
+        console.error("Error returning item:", error);
+        alert(`返却処理に失敗しました: ${error.message}`);
+        return;
+      }
+
+      await fetchItems();
+      alert("返却済みにしました");
+    } catch (error: any) {
+      console.error("Error:", error);
+      alert(`エラーが発生しました: ${error.message}`);
     }
   }
 
   async function handleNewRegistrantSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!newRegistrantName.trim()) {
-      alert("氏名を入力してください");
-      return;
-    }
-
     setRegistering(true);
-    try {
-      const { error } = await supabase
-        .from("lf_registrants")
-        .insert({
-          name: newRegistrantName.trim(),
-          email: newRegistrantEmail.trim() || null,
-          role: "教員",
-        });
 
-      if (error) throw error;
-      
+    try {
+      const { error } = await supabase.from("lf_registrants").insert({
+        name: newRegistrantName,
+        email: newRegistrantEmail || null,
+      });
+
+      if (error) {
+        console.error("Error adding registrant:", error);
+        alert(`登録者の追加に失敗しました: ${error.message}\n\nヒント: Supabaseの設定を確認してください。`);
+        return;
+      }
+
       alert("登録者を追加しました");
       setNewRegistrantName("");
       setNewRegistrantEmail("");
       setShowNewRegistrantForm(false);
     } catch (error: any) {
-      console.error("Error adding registrant:", error);
-      let errorMessage = `登録に失敗しました: ${error.message || 'Unknown error'}`;
-      
-      // より詳細なエラーメッセージを提供
-      if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
-        errorMessage = "登録に失敗しました: ネットワークエラー。Supabaseの接続を確認してください。環境変数が正しく設定されているか確認してください。";
-      } else if (error.message?.includes('row-level security') || error.message?.includes('RLS')) {
-        errorMessage = "登録に失敗しました: RLSポリシーが正しく設定されていません。Supabaseでfix_rls_policies.sqlを実行してください。";
-      } else if (error.message?.includes('JWT') || error.message?.includes('auth')) {
-        errorMessage = "登録に失敗しました: 認証エラー。Supabaseの環境変数を確認してください。";
-      }
-      
-      alert(errorMessage);
+      console.error("Error:", error);
+      alert(`エラーが発生しました: ${error.message}`);
     } finally {
       setRegistering(false);
-    }
-  }
-
-  async function handleDelete(id: string) {
-    if (!confirm("本当に削除しますか？")) return;
-
-    try {
-      const { error } = await supabase.from("lf_items").delete().eq("id", id);
-      if (error) throw error;
-      fetchItems();
-    } catch (error) {
-      console.error("Error deleting item:", error);
-      alert("削除エラーが発生しました");
-    }
-  }
-
-  async function handleUpdate(id: string) {
-    try {
-      const { error } = await supabase
-        .from("lf_items")
-        .update(editForm)
-        .eq("id", id);
-
-      if (error) throw error;
-      setEditingId(null);
-      setEditForm({});
-      fetchItems();
-    } catch (error) {
-      console.error("Error updating item:", error);
-      alert("更新エラーが発生しました");
     }
   }
 
   function handleExportCSV() {
     const headers = [
       "ID",
-      "登録日時",
-      "場所",
       "カテゴリ",
+      "場所",
+      "拾得日",
+      "登録者",
+      "説明",
       "返却済み",
       "返却日時",
-      "備考",
+      "登録日時",
     ];
+
     const rows = items.map((item) => [
       item.id,
-      formatDate(item.created_at),
-      item.location,
       item.category,
-      item.is_returned ? "はい" : "いいえ",
-      formatDate(item.returned_at),
+      item.location,
+      item.found_date || "",
+      item.registrant_name || "",
       item.description || "",
+      item.is_returned ? "はい" : "いいえ",
+      item.returned_at ? formatDate(item.returned_at) : "",
+      formatDate(item.created_at),
     ]);
 
-    const csvContent = [
+    const csv = [
       headers.join(","),
-      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+      ...rows.map((row) =>
+        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+      ),
     ].join("\n");
 
-    const blob = new Blob(["\uFEFF" + csvContent], {
-      type: "text/csv;charset=utf-8;",
-    });
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = `忘れ物一覧_${new Date().toISOString().split("T")[0]}.csv`;
     link.click();
   }
 
-  const columns = useMemo<ColumnDef<LostItem>[]>(
+  const columns: ColumnDef<LostItem>[] = useMemo(
     () => [
       {
         accessorKey: "image_url",
-        header: "写真",
+        header: "画像",
         cell: ({ row }) => {
-          const item = row.original;
-          const imageUrl = getImageUrl(item.image_url);
+          const imageUrl = getImageUrl(row.original.image_url);
+          if (!imageUrl) return <span className="text-gray-400 text-xs">なし</span>;
           return (
             <div 
               className="w-16 h-16 relative cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={() => imageUrl && setEnlargedImage(imageUrl)}
+              onClick={() => setEnlargedImage(imageUrl)}
             >
-              {imageUrl ? (
-                <Image
-                  src={imageUrl}
-                  alt={item.category}
-                  fill
-                  className="object-cover rounded"
-                  sizes="64px"
-                />
-              ) : (
-                <div className="w-full h-full bg-gray-200 rounded flex items-center justify-center text-xs text-gray-400">
-                  なし
-                </div>
-              )}
+              <Image
+                src={imageUrl}
+                alt="Item"
+                fill
+                className="object-cover rounded"
+                sizes="64px"
+              />
             </div>
           );
         },
@@ -231,171 +233,108 @@ export default function DashboardPage() {
       {
         accessorKey: "category",
         header: "カテゴリ",
-        cell: ({ row }) => {
-          const item = row.original;
-          if (editingId === item.id) {
-            return (
-              <Select
-                value={editForm.category || item.category}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, category: e.target.value })
-                }
-                className="w-32"
-              >
-                {CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </Select>
-            );
-          }
-          return <span>{item.category}</span>;
-        },
+        cell: ({ row }) =>
+          editingId === row.original.id ? (
+            <Input
+              value={editForm.category || row.original.category}
+              onChange={(e) =>
+                setEditForm({ ...editForm, category: e.target.value })
+              }
+              className="w-32"
+            />
+          ) : (
+            row.original.category
+          ),
       },
       {
         accessorKey: "location",
         header: "場所",
-        cell: ({ row }) => {
-          const item = row.original;
-          if (editingId === item.id) {
-            return (
-              <Input
-                value={editForm.location || item.location}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, location: e.target.value })
-                }
-                className="w-32"
-              />
-            );
-          }
-          return <span>{item.location}</span>;
-        },
+        cell: ({ row }) =>
+          editingId === row.original.id ? (
+            <Input
+              value={editForm.location || row.original.location}
+              onChange={(e) =>
+                setEditForm({ ...editForm, location: e.target.value })
+              }
+              className="w-32"
+            />
+          ) : (
+            row.original.location
+          ),
       },
       {
         accessorKey: "found_date",
         header: "拾得日",
-        cell: ({ row }) => {
-          const item = row.original;
-          if (editingId === item.id) {
-            return (
-              <Input
-                type="date"
-                value={(editForm.found_date ?? item.found_date) ?? ""}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, found_date: e.target.value || null })
-                }
-                className="w-32"
-                max={new Date().toISOString().split('T')[0]}
-              />
-            );
-          }
-          return (
-            <span className="text-xs">
-              {item.found_date ? formatDate(item.found_date) : formatDate(item.created_at)}
-            </span>
-          );
-        },
-      },
-      {
-        accessorKey: "created_at",
-        header: "登録日時",
-        cell: ({ row }) => formatDate(row.original.created_at),
+        cell: ({ row }) =>
+          editingId === row.original.id ? (
+            <Input
+              type="date"
+              value={editForm.found_date || row.original.found_date || ""}
+              onChange={(e) =>
+                setEditForm({ ...editForm, found_date: e.target.value })
+              }
+              className="w-40"
+            />
+          ) : (
+            row.original.found_date || "-"
+          ),
       },
       {
         accessorKey: "registrant_name",
         header: "登録者",
-        cell: ({ row }) => {
-          const item = row.original;
-          if (editingId === item.id) {
-            return (
-              <Input
-                value={(editForm.registrant_name ?? item.registrant_name) ?? ""}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, registrant_name: e.target.value || null })
-                }
-                className="w-24"
-                placeholder="登録者名"
-              />
-            );
-          }
-          return <span className="text-xs">{item.registrant_name || "-"}</span>;
-        },
+        cell: ({ row }) =>
+          editingId === row.original.id ? (
+            <Input
+              value={editForm.registrant_name || row.original.registrant_name || ""}
+              onChange={(e) =>
+                setEditForm({ ...editForm, registrant_name: e.target.value })
+              }
+              className="w-32"
+            />
+          ) : (
+            row.original.registrant_name || "-"
+          ),
+      },
+      {
+        accessorKey: "description",
+        header: "説明",
+        cell: ({ row }) =>
+          editingId === row.original.id ? (
+            <Input
+              value={editForm.description || row.original.description || ""}
+              onChange={(e) =>
+                setEditForm({ ...editForm, description: e.target.value })
+              }
+              className="w-48"
+            />
+          ) : (
+            <span className="line-clamp-2">
+              {row.original.description || "-"}
+            </span>
+          ),
       },
       {
         accessorKey: "is_returned",
-        header: "状態",
-        cell: ({ row }) => {
-          const item = row.original;
-          if (editingId === item.id) {
-            return (
-              <Select
-                value={editForm.is_returned !== undefined ? String(editForm.is_returned) : String(item.is_returned)}
-                onChange={(e) =>
-                  setEditForm({
-                    ...editForm,
-                    is_returned: e.target.value === "true",
-                    returned_at:
-                      e.target.value === "true" && !item.is_returned
-                        ? new Date().toISOString()
-                        : item.returned_at,
-                  })
-                }
-                className="w-24"
-              >
-                <option value="false">保管中</option>
-                <option value="true">返却済</option>
-              </Select>
-            );
-          }
-          return (
-            <span
-              className={`px-2 py-1 rounded text-xs ${
-                item.is_returned
-                  ? "bg-green-100 text-green-800"
-                  : "bg-orange-100 text-orange-800"
-              }`}
-            >
-              {item.is_returned ? "返却済" : "保管中"}
-            </span>
-          );
-        },
-      },
-      {
-        accessorKey: "returned_at",
-        header: "返却日時",
-        cell: ({ row }) => formatDate(row.original.returned_at),
-      },
-      {
-        id: "return_status",
         header: "返却済み",
-        cell: ({ row }) => {
-          const item = row.original;
-          if (item.is_returned) {
-            return (
-              <span className="font-bold text-red-600 text-lg">
-                返却済み
-              </span>
-            );
-          }
-          return <span className="text-gray-500">-</span>;
-        },
+        cell: ({ row }) =>
+          row.original.is_returned ? (
+            <span className="font-bold text-red-600">返却済み</span>
+          ) : (
+            <span className="text-orange-600">未返却</span>
+          ),
       },
       {
         id: "actions",
         header: "操作",
         cell: ({ row }) => {
           const item = row.original;
-          const isEditing = editingId === item.id;
-
           return (
             <div className="flex gap-2">
-              {isEditing ? (
+              {editingId === item.id ? (
                 <>
                   <Button
                     size="sm"
-                    onClick={() => handleUpdate(item.id)}
-                    variant="success"
+                    onClick={() => handleSave(item.id)}
                   >
                     保存
                   </Button>
@@ -407,7 +346,7 @@ export default function DashboardPage() {
                       setEditForm({});
                     }}
                   >
-                    取消
+                    キャンセル
                   </Button>
                 </>
               ) : (
@@ -415,8 +354,7 @@ export default function DashboardPage() {
                   {!item.is_returned && (
                     <Button
                       size="sm"
-                      variant="outline"
-                      className="bg-green-500 hover:bg-green-600 text-white"
+                      className="bg-green-600 hover:bg-green-700"
                       onClick={() => handleReturn(item.id)}
                     >
                       返却
@@ -660,5 +598,13 @@ export default function DashboardPage() {
         </div>
       </div>
     </>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <ProtectedRoute>
+      <DashboardPageContent />
+    </ProtectedRoute>
   );
 }
