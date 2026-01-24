@@ -21,7 +21,12 @@ async function getItem(id: string): Promise<LostItem | null> {
     }
 
     return data;
-  } catch (error) {
+  } catch (error: any) {
+    // 環境変数が設定されていない場合でもビルドを成功させる
+    if (error.message?.includes('Missing Supabase environment variables')) {
+      console.warn("⚠️ Supabase environment variables are not set. Please configure them in Vercel.");
+      return null;
+    }
     console.error("Error creating Supabase client:", error);
     return null;
   }
