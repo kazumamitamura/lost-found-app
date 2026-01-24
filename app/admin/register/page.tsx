@@ -93,7 +93,18 @@ export default function RegisterPage() {
 
       if (insertError) {
         console.error("Insert error:", insertError);
-        throw new Error(`データの登録に失敗しました: ${insertError.message}`);
+        let errorMessage = `データの登録に失敗しました: ${insertError.message || 'Unknown error'}`;
+        
+        // より詳細なエラーメッセージを提供
+        if (insertError.message?.includes('Failed to fetch') || insertError.message?.includes('NetworkError')) {
+          errorMessage = "データの登録に失敗しました: ネットワークエラー。Supabaseの接続を確認してください。環境変数が正しく設定されているか確認してください。";
+        } else if (insertError.message?.includes('row-level security') || insertError.message?.includes('RLS')) {
+          errorMessage = "データの登録に失敗しました: RLSポリシーが正しく設定されていません。Supabaseでfix_rls_policies.sqlを実行してください。";
+        } else if (insertError.message?.includes('JWT') || insertError.message?.includes('auth')) {
+          errorMessage = "データの登録に失敗しました: 認証エラー。Supabaseの環境変数を確認してください。";
+        }
+        
+        throw new Error(errorMessage);
       }
 
       showToast("忘れ物を登録しました！", "success");
