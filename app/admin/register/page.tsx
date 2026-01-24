@@ -27,7 +27,7 @@ function RegisterPageContent() {
   const [uploading, setUploading] = useState(false);
   const [registeredItem, setRegisteredItem] = useState<any>(null);
   const router = useRouter();
-  const { toast } = useToast();
+  const { showToast } = useToast();
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -110,7 +110,7 @@ function RegisterPageContent() {
       }
 
       setRegisteredItem(data);
-      toast("忘れ物を登録しました！");
+      showToast("忘れ物を登録しました！", "success");
     } catch (error: any) {
       console.error("Unexpected error:", error);
       alert(`予期しないエラーが発生しました: ${error.message}`);
