@@ -27,7 +27,7 @@ function RegisterPageContent() {
   const [uploading, setUploading] = useState(false);
   const [registeredItem, setRegisteredItem] = useState<any>(null);
   const router = useRouter();
-  const { showToast } = useToast();
+  const { toasts, showToast, removeToast } = useToast();
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -281,7 +281,7 @@ function RegisterPageContent() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 to-blue-100">
       <Navigation />
-      <ToastContainer />
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="container mx-auto px-4 py-6">
         <div className="max-w-3xl mx-auto">
         <Card className="shadow-xl">
