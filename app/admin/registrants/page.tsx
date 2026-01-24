@@ -462,3 +462,11 @@ export default function RegistrantsPage() {
     </div>
   );
 }
+
+export default function RegistrantsPage() {
+  return (
+    <ProtectedRoute>
+      <RegistrantsPageContent />
+    </ProtectedRoute>
+  );
+}

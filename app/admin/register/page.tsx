@@ -473,3 +473,11 @@ export default function RegisterPage() {
     </div>
   );
 }
+
+export default function RegisterPage() {
+  return (
+    <ProtectedRoute>
+      <RegisterPageContent />
+    </ProtectedRoute>
+  );
+}
