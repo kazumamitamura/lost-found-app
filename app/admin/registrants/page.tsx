@@ -457,6 +457,7 @@ export default function RegistrantsPage() {
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
     </div>
   );
