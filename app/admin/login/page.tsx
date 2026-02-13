@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -117,10 +118,17 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
+          <div className="mt-6 text-center space-y-2">
+            <p className="text-sm text-gray-600">
+              アカウントをお持ちでない方は
+              <Link href="/admin/signup" className="ml-1 text-sky-600 hover:text-sky-700 font-medium">
+                新規登録
+              </Link>
+            </p>
             <button
+              type="button"
               onClick={() => router.push("/")}
-              className="text-sm text-sky-600 hover:text-sky-700"
+              className="block w-full text-sm text-gray-500 hover:text-gray-700"
             >
               ← 検索ページに戻る
             </button>
@@ -128,9 +136,8 @@ export default function LoginPage() {
 
           <div className="mt-6 p-4 bg-blue-50 rounded-lg">
             <p className="text-xs text-gray-600">
-              <strong>初回ログイン時：</strong><br />
-              管理者から提供されたメールアドレスとパスワードを使用してください。<br />
-              アカウントがない場合は、管理者に連絡してアカウントを作成してもらってください。
+              <strong>初回利用時：</strong><br />
+              教員・職員の方は「新規登録」からアカウントを作成するか、管理者に連絡して登録してもらってください。
             </p>
           </div>
         </CardContent>
