@@ -50,7 +50,7 @@ function DashboardPageContent() {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from("lf_items")
+        .from("lost_items")
         .select("*")
         .eq("is_returned", showReturned)
         .order("created_at", { ascending: false });
@@ -74,7 +74,7 @@ function DashboardPageContent() {
     if (!confirm("本当に削除しますか？")) return;
 
     try {
-      const { error } = await supabase.from("lf_items").delete().eq("id", id);
+      const { error } = await supabase.from("lost_items").delete().eq("id", id);
 
       if (error) {
         console.error("Error deleting item:", error);
@@ -93,7 +93,7 @@ function DashboardPageContent() {
   async function handleSave(id: string) {
     try {
       const { error } = await supabase
-        .from("lf_items")
+        .from("lost_items")
         .update(editForm)
         .eq("id", id);
 
@@ -118,7 +118,7 @@ function DashboardPageContent() {
 
     try {
       const { error } = await supabase
-        .from("lf_items")
+        .from("lost_items")
         .update({
           is_returned: true,
           returned_at: new Date().toISOString(),
@@ -147,6 +147,8 @@ function DashboardPageContent() {
       const { error } = await supabase.from("lf_registrants").insert({
         name: newRegistrantName,
         email: newRegistrantEmail || null,
+        role: "教員",
+        is_active: true,
       });
 
       if (error) {

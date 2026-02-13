@@ -1,5 +1,6 @@
 -- ============================================
 -- 既存テーブルにカラムを追加するマイグレーション
+-- テーブル名: lost_items（接頭語 lost_）
 -- このSQLをSupabaseのSQL Editorで実行してください
 -- ============================================
 
@@ -8,10 +9,10 @@ DO $$
 BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM information_schema.columns 
-        WHERE table_name = 'lf_items' 
+        WHERE table_name = 'lost_items' 
         AND column_name = 'registrant_name'
     ) THEN
-        ALTER TABLE lf_items ADD COLUMN registrant_name TEXT;
+        ALTER TABLE lost_items ADD COLUMN registrant_name TEXT;
         RAISE NOTICE 'registrant_nameカラムを追加しました';
     ELSE
         RAISE NOTICE 'registrant_nameカラムは既に存在します';
@@ -23,10 +24,10 @@ DO $$
 BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM information_schema.columns 
-        WHERE table_name = 'lf_items' 
+        WHERE table_name = 'lost_items' 
         AND column_name = 'found_date'
     ) THEN
-        ALTER TABLE lf_items ADD COLUMN found_date DATE;
+        ALTER TABLE lost_items ADD COLUMN found_date DATE;
         RAISE NOTICE 'found_dateカラムを追加しました';
     ELSE
         RAISE NOTICE 'found_dateカラムは既に存在します';

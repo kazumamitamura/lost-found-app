@@ -61,7 +61,7 @@ function RegisterPageContent() {
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
 
         const { data: uploadData, error: uploadError } = await supabase.storage
-          .from("lf-images")
+          .from("lost-images")
           .upload(fileName, imageFile);
 
         if (uploadError) {
@@ -69,7 +69,7 @@ function RegisterPageContent() {
           alert(
             `画像のアップロードに失敗しました: ${uploadError.message}\n\n` +
             `ヒント:\n` +
-            `1. Supabase Storage の "lf-images" バケットが作成されているか確認してください\n` +
+            `1. Supabase Storage の "lost-images" バケットが作成されているか確認してください\n` +
             `2. Storage の RLS ポリシーが正しく設定されているか確認してください\n` +
             `3. 画像ファイルのサイズが大きすぎないか確認してください（推奨: 5MB以下）`
           );
@@ -82,7 +82,7 @@ function RegisterPageContent() {
 
       // データベースに登録
       const { data, error } = await supabase
-        .from("lf_items")
+        .from("lost_items")
         .insert({
           category,
           location,
@@ -101,7 +101,7 @@ function RegisterPageContent() {
         alert(
           `登録に失敗しました: ${error.message}\n\n` +
           `ヒント:\n` +
-          `1. Supabaseの "lf_items" テーブルが作成されているか確認してください\n` +
+          `1. Supabaseの "lost_items" テーブルが作成されているか確認してください\n` +
           `2. RLS (Row Level Security) ポリシーが正しく設定されているか確認してください\n` +
           `3. ネットワーク接続を確認してください`
         );

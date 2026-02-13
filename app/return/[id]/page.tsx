@@ -30,7 +30,7 @@ export default function ReturnPage({ params }: { params: Promise<{ id: string }>
   async function fetchItem(itemId: string) {
     try {
       const { data, error } = await supabase
-        .from("lf_items")
+        .from("lost_items")
         .select("*")
         .eq("qr_code_uuid", itemId)
         .single();
@@ -53,7 +53,7 @@ export default function ReturnPage({ params }: { params: Promise<{ id: string }>
     setReturning(true);
     try {
       const { error } = await supabase
-        .from("lf_items")
+        .from("lost_items")
         .update({
           is_returned: true,
           returned_at: new Date().toISOString(),

@@ -11,7 +11,7 @@ async function getStoredItems(): Promise<LostItem[]> {
   try {
     const supabase = createServerClient();
     const { data, error } = await supabase
-      .from("lf_items")
+      .from("lost_items")
       .select("*")
       .eq("is_returned", false)
       .order("created_at", { ascending: false });

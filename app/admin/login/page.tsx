@@ -22,7 +22,7 @@ export default function LoginPage() {
     try {
       // メールアドレスが登録者リストに存在するか確認
       const { data: registrant, error: registrantError } = await supabase
-        .from("lf_registrants")
+        .from("lost_registrants")
         .select("*")
         .eq("email", email)
         .single();

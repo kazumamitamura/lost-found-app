@@ -77,7 +77,7 @@ npm run dev
 
 ## データベース設計
 
-### テーブル: `lf_items`
+### テーブル: `lost_items`（忘れ物一覧）
 
 - `id`: UUID (Primary Key)
 - `created_at`: 登録日時
@@ -89,7 +89,11 @@ npm run dev
 - `description`: 備考
 - `qr_code_uuid`: QRコード用UUID
 
-### Storage: `lf-images`
+### テーブル: `lost_registrants`（登録者・管理者）
+
+- このアプリに登録した人（教員・職員など）を管理。ログイン可能な管理者はここにメールが登録されている必要があります。
+
+### Storage: `lost-images`
 
 - 公開閲覧可能
 - 認証済みユーザーのみアップロード可能

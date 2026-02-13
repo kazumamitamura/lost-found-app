@@ -11,7 +11,7 @@ async function getItem(id: string): Promise<LostItem | null> {
   try {
     const supabase = createServerClient();
     const { data, error } = await supabase
-      .from("lf_items")
+      .from("lost_items")
       .select("*")
       .eq("id", id)
       .single();

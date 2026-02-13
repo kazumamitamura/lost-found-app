@@ -2,6 +2,16 @@
 
 このドキュメントでは、忘れ物管理システムの認証機能のセットアップ方法を説明します。
 
+## このアプリで使う Supabase のテーブル
+
+| 用途           | テーブル名           | 説明 |
+|----------------|----------------------|------|
+| **登録者（管理者）** | **`lost_registrants`** | このアプリに登録した人（教員・職員など）を管理。ここにメールが登録されていて、かつ Supabase Auth で同じメールでログインしている人だけが管理画面にアクセスできます。 |
+| 忘れ物データ   | `lost_items`         | 忘れ物の一覧・返却状態など。 |
+| 画像           | Storage バケット `lost-images` | 忘れ物の写真。 |
+
+接頭語 `lost_` により、他のアプリ（同じ Supabase プロジェクト）のテーブルと混同しません。
+
 ## 概要
 
 管理画面（登録、管理ダッシュボード、登録者管理）へのアクセスは、事前に登録された管理者のみに制限されています。
@@ -19,7 +29,7 @@
 ### 1-2. セキュリティ設定
 
 1. **Authentication** → **Policies** を選択
-2. `lf_registrants` テーブルのRLSポリシーが正しく設定されていることを確認
+2. `lost_registrants` テーブルのRLSポリシーが正しく設定されていることを確認
 
 ## 2. 初回管理者アカウントの作成
 
@@ -33,11 +43,12 @@
    - **Auto Confirm User**: ✅ チェックを入れる
 4. **Create user** をクリック
 
-5. 次に、`lf_registrants` テーブルにも同じメールアドレスを登録：
-   - **Database** → **Table Editor** → `lf_registrants` を選択
+5. 次に、**登録者テーブル** `lost_registrants` にも同じメールアドレスを登録：
+   - **Database** → **Table Editor** → `lost_registrants` を選択
    - **Insert row** をクリック
    - **name**: 管理者名
    - **email**: Authで作成したのと同じメールアドレス
+   - **role**: 教員（または職員・その他）
    - **Save** をクリック
 
 ### 方法2: SQLで一括作成
@@ -45,11 +56,11 @@
 以下のSQLを実行して、複数の管理者を一度に設定できます：
 
 ```sql
--- 1. lf_registrantsテーブルに管理者を追加
-INSERT INTO lf_registrants (name, email, position, notes)
+-- 1. lost_registrants テーブルに管理者を追加（role は '教員'/'職員'/'その他' のいずれか）
+INSERT INTO lost_registrants (name, email, role, notes)
 VALUES
-  ('山田太郎', 'yamada@school.com', '教務主任', '管理者'),
-  ('佐藤花子', 'sato@school.com', '生徒指導', '管理者'),
+  ('山田太郎', 'yamada@school.com', '教員', '管理者'),
+  ('佐藤花子', 'sato@school.com', '教員', '管理者'),
   ('鈴木次郎', 'suzuki@school.com', '教員', '管理者');
 
 -- 2. Supabase Authのユーザーは、Supabaseダッシュボードから手動で作成するか、
@@ -102,7 +113,7 @@ ProtectedRoute コンポーネントが認証状態をチェック
     ↓
 ログイン成功
     ↓
-lf_registrants テーブルで登録者として存在するか確認
+lost_registrants テーブルで登録者として存在するか確認
     ↓
 ┌─ 登録者 → ダッシュボードにリダイレクト
 └─ 未登録 → エラーメッセージ表示
@@ -148,26 +159,26 @@ const handleResetPassword = async (email: string) => {
 以下のSQLで、適切なRLSポリシーが設定されているか確認：
 
 ```sql
--- lf_registrants テーブルのポリシー確認
-SELECT * FROM pg_policies WHERE tablename = 'lf_registrants';
+-- lost_registrants テーブルのポリシー確認
+SELECT * FROM pg_policies WHERE tablename = 'lost_registrants';
 
 -- 必要に応じて、認証済みユーザーのみがアクセスできるように変更
-DROP POLICY IF EXISTS lf_registrants_select_public ON lf_registrants;
-DROP POLICY IF EXISTS lf_registrants_insert_public ON lf_registrants;
-DROP POLICY IF EXISTS lf_registrants_update_public ON lf_registrants;
-DROP POLICY IF EXISTS lf_registrants_delete_public ON lf_registrants;
+DROP POLICY IF EXISTS lost_registrants_select_public ON lost_registrants;
+DROP POLICY IF EXISTS lost_registrants_insert_public ON lost_registrants;
+DROP POLICY IF EXISTS lost_registrants_update_public ON lost_registrants;
+DROP POLICY IF EXISTS lost_registrants_delete_public ON lost_registrants;
 
 -- 認証済みユーザーのみがアクセス可能にする
-CREATE POLICY lf_registrants_select_authenticated ON lf_registrants
+CREATE POLICY lost_registrants_select_authenticated ON lost_registrants
   FOR SELECT TO authenticated USING (true);
 
-CREATE POLICY lf_registrants_insert_authenticated ON lf_registrants
+CREATE POLICY lost_registrants_insert_authenticated ON lost_registrants
   FOR INSERT TO authenticated WITH CHECK (true);
 
-CREATE POLICY lf_registrants_update_authenticated ON lf_registrants
+CREATE POLICY lost_registrants_update_authenticated ON lost_registrants
   FOR UPDATE TO authenticated USING (true);
 
-CREATE POLICY lf_registrants_delete_authenticated ON lf_registrants
+CREATE POLICY lost_registrants_delete_authenticated ON lost_registrants
   FOR DELETE TO authenticated USING (true);
 ```
 
@@ -176,7 +187,7 @@ CREATE POLICY lf_registrants_delete_authenticated ON lf_registrants
 ### ログインできない
 
 1. **メールアドレスが登録されていない**
-   - Supabase Dashboard → Database → lf_registrants テーブルを確認
+   - Supabase Dashboard → Database → lost_registrants テーブルを確認
    - メールアドレスが登録されているか確認
 
 2. **Authユーザーが作成されていない**
@@ -194,13 +205,13 @@ CREATE POLICY lf_registrants_delete_authenticated ON lf_registrants
 
 ### 「登録されていないメールアドレスです」と表示される
 
-- `lf_registrants` テーブルにメールアドレスが登録されていません
+- `lost_registrants` テーブルにメールアドレスが登録されていません
 - 管理者に連絡して登録してもらってください
 
 ## 8. 初回デプロイ後のチェックリスト
 
 - [ ] Supabase Authが有効になっている
-- [ ] 初回管理者アカウントが作成されている（Auth + lf_registrants）
+- [ ] 初回管理者アカウントが作成されている（Auth + lost_registrants）
 - [ ] ログインページ（/admin/login）にアクセスできる
 - [ ] ログイン後、管理画面にアクセスできる
 - [ ] ログアウトボタンが表示され、機能する

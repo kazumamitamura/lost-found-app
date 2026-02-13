@@ -12,7 +12,7 @@ export async function checkAuth() {
 
   // 登録者リストに存在するか確認
   const { data: registrant, error: registrantError } = await supabase
-    .from("lf_registrants")
+    .from("lost_registrants")
     .select("*")
     .eq("email", session.user.email)
     .single();

@@ -13,7 +13,8 @@ type Registrant = {
   created_at: string;
   name: string;
   email: string | null;
-  position: string | null;
+  role: string | null;
+  is_active: boolean;
   notes: string | null;
 };
 
@@ -34,7 +35,7 @@ function RegistrantsPageContent() {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from("lf_registrants")
+        .from("lost_registrants")
         .select("*")
         .order("created_at", { ascending: false });
 
@@ -56,7 +57,7 @@ function RegistrantsPageContent() {
   async function handleSave(id: string) {
     try {
       const { error } = await supabase
-        .from("lf_registrants")
+        .from("lost_registrants")
         .update(editForm)
         .eq("id", id);
 
@@ -81,7 +82,7 @@ function RegistrantsPageContent() {
 
     try {
       const { error } = await supabase
-        .from("lf_registrants")
+        .from("lost_registrants")
         .delete()
         .eq("id", id);
 
@@ -112,12 +113,15 @@ function RegistrantsPageContent() {
       const registrantsToAdd = [];
 
       for (const line of lines) {
-        const [name, email] = line.split(",").map((s) => s.trim());
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        const [name, email] = trimmed.split(",").map((s) => s.trim());
         if (name) {
           registrantsToAdd.push({
             name,
             email: email || null,
-            position: null,
+            role: "教員",
+            is_active: true,
             notes: null,
           });
         }
@@ -130,7 +134,7 @@ function RegistrantsPageContent() {
       }
 
       const { error } = await supabase
-        .from("lf_registrants")
+        .from("lost_registrants")
         .insert(registrantsToAdd);
 
       if (error) {
@@ -275,15 +279,19 @@ function RegistrantsPageContent() {
                       </td>
                       <td className="p-3 text-sm">
                         {editingId === registrant.id ? (
-                          <Input
-                            value={editForm.position || registrant.position || ""}
+                          <select
+                            value={editForm.role ?? registrant.role ?? "教員"}
                             onChange={(e) =>
-                              setEditForm({ ...editForm, position: e.target.value })
+                              setEditForm({ ...editForm, role: e.target.value })
                             }
-                            className="w-32"
-                          />
+                            className="w-32 border rounded px-2 py-1.5 text-sm"
+                          >
+                            <option value="教員">教員</option>
+                            <option value="職員">職員</option>
+                            <option value="その他">その他</option>
+                          </select>
                         ) : (
-                          registrant.position || "-"
+                          registrant.role || "-"
                         )}
                       </td>
                       <td className="p-3 text-sm">
