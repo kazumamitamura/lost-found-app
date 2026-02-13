@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
 
-export type ToastType = "success" | "error" | "info";
+export type ToastType = "success" | "error" | "info" | "warning";
 
 export interface Toast {
   id: string;
@@ -49,6 +49,7 @@ export function ToastContainer({ toasts, onRemove }: { toasts: Toast[]; onRemove
               "bg-green-50 border border-green-200 text-green-800": toast.type === "success",
               "bg-red-50 border border-red-200 text-red-800": toast.type === "error",
               "bg-blue-50 border border-blue-200 text-blue-800": toast.type === "info",
+              "bg-amber-50 border border-amber-200 text-amber-800": toast.type === "warning",
             }
           )}
         >
