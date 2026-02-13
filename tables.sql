@@ -81,13 +81,14 @@ CREATE POLICY "lost_items_delete_authenticated" ON lost_items
 -- ============================================
 
 -- Bucket作成（既に存在する場合はスキップ）
+-- 幅広い画像形式を許可: JPEG, PNG, GIF, WebP, BMP, ICO, SVG, HEIC など
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES (
     'lf-images',
     'lf-images',
-    true, -- 公開アクセス可能
-    5242880, -- 5MB制限
-    ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/jpg']
+    true,
+    10485760,
+    ARRAY['image/jpeg', 'image/jpg', 'image/pjpeg', 'image/png', 'image/x-png', 'image/gif', 'image/webp', 'image/bmp', 'image/x-ms-bmp', 'image/x-icon', 'image/vnd.microsoft.icon', 'image/svg+xml', 'image/heic', 'image/heif']
 )
 ON CONFLICT (id) DO NOTHING;
 

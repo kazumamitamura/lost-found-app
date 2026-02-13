@@ -15,6 +15,22 @@ import { useToast, ToastContainer } from "@/components/ui/toast";
 import { Navigation } from "@/components/navigation";
 import { ProtectedRoute } from "@/components/protected-route";
 
+function getImageMimeType(ext: string): string {
+  const mime: Record<string, string> = {
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    gif: "image/gif",
+    webp: "image/webp",
+    bmp: "image/bmp",
+    ico: "image/x-icon",
+    svg: "image/svg+xml",
+    heic: "image/heic",
+    heif: "image/heif",
+  };
+  return mime[ext] || "image/png";
+}
+
 function RegisterPageContent() {
   const [category, setCategory] = useState("");
   const [location, setLocation] = useState("");
@@ -57,17 +73,20 @@ function RegisterPageContent() {
 
       // 画像アップロード（任意：失敗しても登録は続行）
       if (imageFile) {
-        const fileExt = imageFile.name.split(".").pop();
+        const fileExt = (imageFile.name.split(".").pop() || "png").toLowerCase();
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const contentType = imageFile.type || getImageMimeType(fileExt);
 
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from("lf-images")
-          .upload(fileName, imageFile);
+          .upload(fileName, imageFile, {
+            contentType: contentType || "image/png",
+          });
 
         if (uploadError) {
           console.error("Image upload error:", uploadError);
           showToast(
-            "写真は登録されませんでした。忘れ物は登録しました。lf-images バケットの設定を確認してください。",
+            `写真は登録されませんでした（${uploadError.message}）。忘れ物は登録しました。`,
             "warning"
           );
           imageUrl = null;
@@ -301,7 +320,7 @@ function RegisterPageContent() {
                   写真 <span className="text-gray-500 font-normal">（任意）</span>
                 </p>
                 <p className="text-xs text-gray-500 mb-4">
-                  クリックまたはドラッグで選択。未選択でも登録できます。Supabase の Storage「lf-images」バケットで写真が保存されます。
+                  クリックまたはドラッグで選択。未選択でも登録できます。JPEG / PNG / GIF / WebP / BMP など幅広い画像形式に対応（10MB以下）。
                 </p>
                 <label
                   htmlFor="image-upload"
@@ -323,7 +342,7 @@ function RegisterPageContent() {
                         写真を撮影 / アップロード
                       </p>
                       <p className="text-sm text-gray-500 mt-1">
-                        クリックして画像を選択（5MB以下推奨）
+                        クリックして画像を選択（10MB以下）
                       </p>
                     </div>
                   )}

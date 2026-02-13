@@ -19,6 +19,12 @@ Supabase の **SQL Editor** で、以下の順に実行してください。
 
 ※ アプリは現在 `lost_items` / `lost_registrants` を参照しています。既存DBが `lf_` のままなら、このマイグレーションを実行するか、アプリ側のテーブル名を `lf_` に戻す必要があります。
 
+## 既に「lf-images」バケットがある場合（アプリと連携するだけ）
+
+| ファイル | 内容 |
+|----------|------|
+| **setup_lf_images_bucket.sql** | 既存の `lf-images` バケット用に RLS ポリシーを設定。バケットが無い場合のみ作成。**画像のアップロード・表示を有効にしたいときはこれを実行してください。** |
+
 ## 既存テーブルにカラムを足すだけの場合
 
 | ファイル | 内容 |
@@ -37,4 +43,5 @@ Supabase の **SQL Editor** で、以下の順に実行してください。
 1. Supabase Dashboard → **SQL Editor** を開く  
 2. `tables.sql` を貼り付けて **Run**  
 3. `tables_registrants.sql` を貼り付けて **Run**  
-4. 画像アップロードや登録が「権限エラー」になる場合は、`fix_rls_policies.sql` と `fix_storage_policy.sql` を実行
+4. **既に lf-images バケットがある場合**は、`setup_lf_images_bucket.sql` を実行するとアプリと連携できます。  
+5. 画像アップロードや登録が「権限エラー」になる場合は、`fix_rls_policies.sql` と `setup_lf_images_bucket.sql`（または `fix_storage_policy.sql`）を実行
