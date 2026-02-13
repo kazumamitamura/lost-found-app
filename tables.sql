@@ -83,8 +83,8 @@ CREATE POLICY "lost_items_delete_authenticated" ON lost_items
 -- Bucket作成（既に存在する場合はスキップ）
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES (
-    'lost-images',
-    'lost-images',
+    'lf-images',
+    'lf-images',
     true, -- 公開アクセス可能
     5242880, -- 5MB制限
     ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/jpg']
@@ -92,41 +92,41 @@ VALUES (
 ON CONFLICT (id) DO NOTHING;
 
 -- 既存のStorageポリシーを削除（存在する場合）
-DROP POLICY IF EXISTS "lost_images_select_public" ON storage.objects;
-DROP POLICY IF EXISTS "lost_images_insert_authenticated" ON storage.objects;
-DROP POLICY IF EXISTS "lost_images_update_authenticated" ON storage.objects;
-DROP POLICY IF EXISTS "lost_images_delete_authenticated" ON storage.objects;
+DROP POLICY IF EXISTS "lf_images_select_public" ON storage.objects;
+DROP POLICY IF EXISTS "lf_images_insert_authenticated" ON storage.objects;
+DROP POLICY IF EXISTS "lf_images_update_authenticated" ON storage.objects;
+DROP POLICY IF EXISTS "lf_images_delete_authenticated" ON storage.objects;
 
 -- Storage ポリシー: 誰でも閲覧可能
-CREATE POLICY "lost_images_select_public" ON storage.objects
+CREATE POLICY "lf_images_select_public" ON storage.objects
     FOR SELECT
-    USING (bucket_id = 'lost-images');
+    USING (bucket_id = 'lf-images');
 
 -- Storage ポリシー: 認証済みユーザーのみアップロード可能
-CREATE POLICY "lost_images_insert_authenticated" ON storage.objects
+CREATE POLICY "lf_images_insert_authenticated" ON storage.objects
     FOR INSERT
     WITH CHECK (
-        bucket_id = 'lost-images' 
+        bucket_id = 'lf-images' 
         AND auth.role() = 'authenticated'
     );
 
 -- Storage ポリシー: 認証済みユーザーのみ更新可能
-CREATE POLICY "lost_images_update_authenticated" ON storage.objects
+CREATE POLICY "lf_images_update_authenticated" ON storage.objects
     FOR UPDATE
     USING (
-        bucket_id = 'lost-images' 
+        bucket_id = 'lf-images' 
         AND auth.role() = 'authenticated'
     )
     WITH CHECK (
-        bucket_id = 'lost-images' 
+        bucket_id = 'lf-images' 
         AND auth.role() = 'authenticated'
     );
 
 -- Storage ポリシー: 認証済みユーザーのみ削除可能
-CREATE POLICY "lost_images_delete_authenticated" ON storage.objects
+CREATE POLICY "lf_images_delete_authenticated" ON storage.objects
     FOR DELETE
     USING (
-        bucket_id = 'lost-images' 
+        bucket_id = 'lf-images' 
         AND auth.role() = 'authenticated'
     );
 

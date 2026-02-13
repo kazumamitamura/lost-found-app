@@ -23,10 +23,7 @@ BEGIN
     END IF;
 END $$;
 
--- 注意: Storage バケット 'lf-images' はリネームできません。
--- 新規に 'lost-images' バケットを Supabase Dashboard の Storage で作成し、
--- 必要ならファイルを手動で移動したうえで、アプリは lost-images を参照します。
--- 既存の lf-images をそのまま使う場合は、lib/utils.ts と register の
--- バケット名を lf-images に戻すか、lost-images バケットを作成して切り替えてください。
+-- 注意: Storage バケットはアプリでは lf-images を参照します。
+-- 既存の lf-images バケットをそのまま利用してください。
 
 SELECT 'リネームマイグレーションを確認しました。' AS message;

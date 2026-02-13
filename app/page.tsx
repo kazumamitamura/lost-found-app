@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ItemsList } from "@/components/items-list";
 import { Navigation } from "@/components/navigation";
+import { ViewerGate } from "@/components/viewer-gate";
 
 async function getStoredItems(): Promise<LostItem[]> {
   try {
@@ -37,11 +38,13 @@ export default async function HomePage() {
   const items = await getStoredItems();
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navigation />
-      <main className="container mx-auto px-4 py-6">
-        <ItemsList initialItems={items} />
-      </main>
-    </div>
+    <ViewerGate>
+      <div className="min-h-screen bg-gray-50">
+        <Navigation />
+        <main className="container mx-auto px-4 py-6">
+          <ItemsList initialItems={items} />
+        </main>
+      </div>
+    </ViewerGate>
   );
 }

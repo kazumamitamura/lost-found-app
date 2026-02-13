@@ -7,16 +7,15 @@ import { formatDate, getImageUrl } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ViewerGate } from "@/components/viewer-gate";
 
 export default function ReturnPage({ params }: { params: Promise<{ id: string }> }) {
   const [item, setItem] = useState<LostItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [returning, setReturning] = useState(false);
   const [returned, setReturned] = useState(false);
-  const router = useRouter();
-  
+
   // Next.js 15のparamsを同期的に解決
   const resolvedParams = use(params);
   const qrCodeUuid = resolvedParams.id;
@@ -176,5 +175,6 @@ export default function ReturnPage({ params }: { params: Promise<{ id: string }>
         </Card>
       </main>
     </div>
+    </ViewerGate>
   );
 }

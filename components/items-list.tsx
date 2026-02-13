@@ -9,6 +9,21 @@ import { Select } from "@/components/ui/select";
 import Image from "next/image";
 import Link from "next/link";
 
+function getItemMonth(item: LostItem): string {
+  const dateStr = item.found_date || item.created_at;
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+
+function monthOptionLabel(value: string): string {
+  if (!value) return "すべて";
+  const [y, m] = value.split("-");
+  return `${y}年${parseInt(m, 10)}月`;
+}
+
 interface ItemsListProps {
   initialItems: LostItem[];
 }
@@ -16,6 +31,16 @@ interface ItemsListProps {
 export function ItemsList({ initialItems }: ItemsListProps) {
   const [locationQuery, setLocationQuery] = useState("");
   const [categoryQuery, setCategoryQuery] = useState("");
+  const [monthQuery, setMonthQuery] = useState("");
+
+  const availableMonths = useMemo(() => {
+    const set = new Set<string>();
+    initialItems.forEach((item) => {
+      const m = getItemMonth(item);
+      if (m) set.add(m);
+    });
+    return Array.from(set).sort((a, b) => b.localeCompare(a));
+  }, [initialItems]);
 
   const filteredItems = useMemo(() => {
     return initialItems.filter((item) => {
@@ -23,16 +48,32 @@ export function ItemsList({ initialItems }: ItemsListProps) {
         !locationQuery ||
         item.location.toLowerCase().includes(locationQuery.toLowerCase());
       const matchesCategory = !categoryQuery || item.category === categoryQuery;
-      return matchesLocation && matchesCategory;
+      const matchesMonth =
+        !monthQuery || getItemMonth(item) === monthQuery;
+      return matchesLocation && matchesCategory && matchesMonth;
     });
-  }, [initialItems, locationQuery, categoryQuery]);
+  }, [initialItems, locationQuery, categoryQuery, monthQuery]);
 
   return (
     <>
       <div className="mb-6 space-y-4">
         <div className="bg-white rounded-lg shadow-sm p-4">
           <h2 className="text-lg font-semibold mb-4">検索・絞り込み</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">月で絞り込み</label>
+              <Select
+                value={monthQuery}
+                onChange={(e) => setMonthQuery(e.target.value)}
+              >
+                <option value="">すべて</option>
+                {availableMonths.map((m) => (
+                  <option key={m} value={m}>
+                    {monthOptionLabel(m)}
+                  </option>
+                ))}
+              </Select>
+            </div>
             <div>
               <label className="block text-sm font-medium mb-2">場所で検索</label>
               <Input

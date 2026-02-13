@@ -15,6 +15,7 @@ const ROLES = [
 ] as const;
 
 export default function SignupPage() {
+  const [signupKey, setSignupKey] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,6 +30,18 @@ export default function SignupPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
+
+    const res = await fetch("/api/verify-signup-key", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key: signupKey }),
+    });
+    const data = await res.json().catch(() => ({ ok: false }));
+    if (!data.ok) {
+      setError("登録キーが正しくありません。管理者に登録キーを確認してください。");
+      setLoading(false);
+      return;
+    }
 
     if (password !== passwordConfirm) {
       setError("パスワードが一致しません。");
@@ -133,6 +146,23 @@ export default function SignupPage() {
           </div>
 
           <form onSubmit={handleSignup} className="space-y-4">
+            <div>
+              <label htmlFor="signupKey" className="block text-sm font-medium text-gray-700 mb-1">
+                管理者登録用パスワード <span className="text-red-500">*</span>
+              </label>
+              <Input
+                id="signupKey"
+                type="password"
+                value={signupKey}
+                onChange={(e) => setSignupKey(e.target.value)}
+                placeholder="登録キーを入力"
+                required
+                autoComplete="off"
+                className="w-full"
+              />
+              <p className="text-xs text-gray-500 mt-1">管理者から伝えられたパスワードを入力してください</p>
+            </div>
+
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                 氏名 <span className="text-red-500">*</span>

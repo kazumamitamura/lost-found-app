@@ -55,29 +55,25 @@ function RegisterPageContent() {
     try {
       let imageUrl = null;
 
-      // 画像アップロード
+      // 画像アップロード（任意：失敗しても登録は続行）
       if (imageFile) {
         const fileExt = imageFile.name.split(".").pop();
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
 
         const { data: uploadData, error: uploadError } = await supabase.storage
-          .from("lost-images")
+          .from("lf-images")
           .upload(fileName, imageFile);
 
         if (uploadError) {
           console.error("Image upload error:", uploadError);
-          alert(
-            `画像のアップロードに失敗しました: ${uploadError.message}\n\n` +
-            `ヒント:\n` +
-            `1. Supabase Storage の "lost-images" バケットが作成されているか確認してください\n` +
-            `2. Storage の RLS ポリシーが正しく設定されているか確認してください\n` +
-            `3. 画像ファイルのサイズが大きすぎないか確認してください（推奨: 5MB以下）`
+          showToast(
+            "写真は登録されませんでした。忘れ物は登録しました。lf-images バケットの設定を確認してください。",
+            "warning"
           );
-          setUploading(false);
-          return;
+          imageUrl = null;
+        } else {
+          imageUrl = uploadData.path;
         }
-
-        imageUrl = uploadData.path;
       }
 
       // データベースに登録
@@ -299,14 +295,20 @@ function RegisterPageContent() {
           </CardHeader>
           <CardContent className="p-6">
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* 画像アップロード */}
+              {/* 画像アップロード（任意） */}
               <div className="border-2 border-dashed border-sky-300 rounded-lg p-6 bg-sky-50">
+                <p className="text-sm font-semibold text-gray-700 mb-2">
+                  写真 <span className="text-gray-500 font-normal">（任意）</span>
+                </p>
+                <p className="text-xs text-gray-500 mb-4">
+                  クリックまたはドラッグで選択。未選択でも登録できます。Supabase の Storage「lf-images」バケットで写真が保存されます。
+                </p>
                 <label
                   htmlFor="image-upload"
-                  className="block cursor-pointer text-center"
+                  className="block cursor-pointer text-center min-h-[120px]"
                 >
                   {imagePreview ? (
-                    <div className="relative w-full h-64 mx-auto">
+                    <div className="relative w-full max-w-sm h-64 mx-auto">
                       <Image
                         src={imagePreview}
                         alt="Preview"
@@ -315,13 +317,13 @@ function RegisterPageContent() {
                       />
                     </div>
                   ) : (
-                    <div className="py-12">
-                      <div className="text-6xl mb-4">📸</div>
-                      <p className="text-lg font-semibold text-gray-700">
-                        写真を撮影/アップロード
+                    <div className="py-8">
+                      <div className="text-5xl mb-3">📸</div>
+                      <p className="text-base font-semibold text-gray-700">
+                        写真を撮影 / アップロード
                       </p>
-                      <p className="text-sm text-gray-500 mt-2">
-                        クリックして画像を選択
+                      <p className="text-sm text-gray-500 mt-1">
+                        クリックして画像を選択（5MB以下推奨）
                       </p>
                     </div>
                   )}
@@ -334,6 +336,22 @@ function RegisterPageContent() {
                   onChange={handleImageChange}
                   className="hidden"
                 />
+                {imagePreview && (
+                  <div className="mt-3 text-center">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setImageFile(null);
+                        setImagePreview(null);
+                      }}
+                      className="text-red-600 border-red-200 hover:bg-red-50"
+                    >
+                      写真を削除
+                    </Button>
+                  </div>
+                )}
               </div>
 
               {/* カテゴリ */}
